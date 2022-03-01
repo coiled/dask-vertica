@@ -1,0 +1,14 @@
+name: test-environment
+channels:
+  - conda-forge
+dependencies:
+  # Required
+  - python=3.8
+  - dask
+  - distributed
+  - pandas
+  - pyarrow
+  - vertica-python
+  - verticapy
+  # Testing
+  - pytest

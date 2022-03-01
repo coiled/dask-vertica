@@ -1,0 +1,4 @@
+dask
+distributed
+verticapy
+vertica-python
