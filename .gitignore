@@ -132,3 +132,5 @@ dmypy.json
 
 # OS Files
 .DS_Store
+verticapy-connect-info.py
+.vscode

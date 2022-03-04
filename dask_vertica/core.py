@@ -1,7 +1,9 @@
-from functools import partial
-from typing import Dict, Optional
+from typing import Optional
+from hashlib import md5
+from datetime import datetime
 
 import pandas as pd
+
 
 import dask
 import dask.dataframe as dd
@@ -12,49 +14,67 @@ from dask.highlevelgraph import HighLevelGraph
 from dask.layers import DataFrameIOLayer
 from dask.utils import SerializableLock
 
-from verticapy.utilities import pandas_to_vertica
+from verticapy import vDataFrame
+from verticapy.utilities import pandas_to_vertica, drop, readSQL
 import vertica_python
+from vertica_python.vertica.connection import Connection
+from vertica_python.errors import DuplicateObject
+
 
 @delayed
 def daskdf_to_vertica(
     df: dd.DataFrame,
-    connection_kwargs: Dict,
+    connection: Connection,
     name: str,
     schema: str = "public",
-    parse_n_lines: int = 10_000,
+    parse_n_lines: Optional[int] = None,
 ):
 
-    with vertica_python.connect(**connection_kwargs) as conn:
-        with SerializableLock(token="daskdf_to_vertica"):
-            with conn.cursor() as cursor:
-                vdf = pandas_to_vertica(
-                    df,
-                    cursor=cursor,
-                    name=name,
-                    schema=schema,
-                    parse_n_lines=parse_n_lines
-                )
-                vdf.to_db(
-                    name,
-                    df.columns.tolist(),
-                    relation_type="insert",
-                    inplace=False,
-                )
+    if not parse_n_lines:
+        parse_n_lines = df.shape[0]
+
+    if _check_if_exists(connection, name, schema=schema):
+        relation_type = "insert"
+    else:
+        relation_type = "table"
+
+    with SerializableLock(token="daskdf_to_vertica"):
+        with connection.cursor() as cursor:
+            now = str(datetime.now()).encode()
+            now_hash = md5(now).hexdigest()
+            tmp = f"tmp_{now_hash}"
+            print(tmp)
+            vdf = pandas_to_vertica(
+                df,
+                cursor=cursor,
+                name=tmp,
+                schema=schema,
+                parse_n_lines=parse_n_lines
+            )
+
+
+            vdf.to_db(
+                f'"{schema}"."{name}"',
+                df.columns.tolist(),
+                relation_type=relation_type,
+                inplace=False,
+            )
+            _drop_table(connection, tmp, schema=schema)
 
 
 @delayed
 def ensure_db_exists(
     df: pd.DataFrame,
-    connection_kwargs: Dict,
+    connection: Connection,
     name: str,
     schema: str = "public",
     parse_n_lines: int = 10_000,
+    inplace: bool = True,
 ):
     # NOTE: we have a separate `ensure_db_exists` function in order to use
     # pandas' `to_sql` which will create a table if the requested one doesn't
-    # already exist. H
-    with vertica_python.connect(**connection_kwargs) as conn:
-        with conn.cursor() as cursor:
+    # already exist.
+    with connection.cursor() as cursor:
             vdf = pandas_to_vertica(
                 df,
                 cursor=cursor,
@@ -63,18 +83,46 @@ def ensure_db_exists(
                 parse_n_lines=parse_n_lines
             )
             vdf.to_db(
-                name,
+                f'"{schema}"."{name}"',
                 df.columns.tolist(),
                 relation_type="table",
-                inplace=False,
+                inplace=inplace,
             )
+            return True
+
+
+def _check_if_exists(
+    connection: Connection,
+    name: str,
+    schema: str = "public"
+) -> bool:
+    with connection.cursor() as cur:
+        table_query = f"""
+            SELECT TABLE_SCHEMA, TABLE_NAME FROM V_CATALOG.TABLES
+            WHERE TABLE_SCHEMA = '{schema}'
+        """
+
+        all_vtables = readSQL(table_query, cursor=cur)
+        does_exist = name in all_vtables["TABLE_NAME"]
+
+    return does_exist
+
+
+def _drop_table(
+    connection: Connection,
+    name: str,
+    schema: str = "public"
+) -> None:
+    with connection.cursor() as cur:
+        drop(name=f'"{schema}"."{name}"', cursor=cur)
 
 
 def to_vertica(
     df: dd.DataFrame,
-    connection_kwargs: Dict,
+    connection: Connection,
     name: str,
     schema: str = "public",
+    if_exists: str = "error",
 ):
     """Write a Dask DataFrame to a Snowflake table.
 
@@ -110,10 +158,25 @@ def to_vertica(
     # Also, some clusters will overwrite the `snowflake.partner` configuration value.
     # We run `ensure_db_exists` on the cluster to ensure we capture the
     # right partner application ID.
-    ensure_db_exists(df._meta, connection_kwargs, name, schema=schema).compute()
+
+    if_exists = if_exists.lower()
+
+    table_already_exists = _check_if_exists(connection, name, schema=schema)
+
+    if not table_already_exists:
+        # ensure_db_exists(df.head(), connection, name, schema=schema).compute()
+        pass
+
+    else:
+        if if_exists == "error":
+            raise RuntimeError(f"Table {name} already exists in {schema}")
+        elif if_exists == "overwrite":
+            _drop_table(connection, name, schema=schema)
+            # ensure_db_exists(df.head(), connection, name, schema=schema).compute()
+
     dask.compute(
         [
-            daskdf_to_vertica(partition, name, connection_kwargs)
+            daskdf_to_vertica(partition, connection, name, schema=schema)
             for partition in df.to_delayed()
         ]
     )
