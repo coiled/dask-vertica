@@ -17,7 +17,7 @@ it out!
 ```zsh
 git clone git@github.com:coiled/dask-vertica.git
 cd dask-vertica
-pipe install -e .
+pip install -e .
 ```
 
 <!--
