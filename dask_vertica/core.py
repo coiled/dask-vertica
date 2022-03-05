@@ -136,9 +136,9 @@ def to_vertica(
         Dask DataFrame to save.
     name : str
         Name of the table to save to.
-    connection_kwargs:
-        Connection arguments used when connecting to Snowflake with
-        ``snowflake.connector.connect``.
+    connection_kwargs : dict
+        Connection arguments used when connecting to Vertica with
+        ``vertica_python.vertica.connection.Connection``.
     schema : str (default = "public")
         Schema in which the table exists
     if_exists : str (default = "error")
@@ -152,7 +152,7 @@ def to_vertica(
     Examples
     --------
 
-    >>> from dask_vertica import to_snowflake
+    >>> from dask_vertica import to_vertica
     >>> df = ...  # Create a Dask DataFrame
     >>> to_vertica(
     ...     df,
