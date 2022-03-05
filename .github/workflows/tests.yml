@@ -32,8 +32,8 @@ jobs:
           activate-environment: test-environment
           auto-activate-base: false
 
-      - name: Install dask_snowflake
+      - name: Install dask_vertica
         run: python -m pip install -e .
 
       - name: Run tests
-        run: pytest dask_snowflake
+        run: pytest dask_vertica
