@@ -1,4 +1,5 @@
 import logging
+import uuid
 from typing import Dict, Optional
 
 from vertica_python import connect
@@ -20,7 +21,7 @@ def daskdf_to_vertica(
     relation_type: str = "insert",
     parse_n_lines: Optional[int] = None,
 ) -> None:
-    """ Upload a dask dataframe to Vertica
+    """Upload a dask dataframe to Vertica
 
     Parameters
     ----------
@@ -54,7 +55,7 @@ def daskdf_to_vertica(
     with SerializableLock(token="daskdf_to_vertica"):
         with connect(**connection_kwargs) as connection:
             with connection.cursor() as cursor:
-                tmp = f"tmp_{name}"
+                tmp = f"tmp_{name}_{uuid.uuid4().hex}"
 
                 logging.debug(f"daskdf_to_vertica: {tmp=}")
                 logging.debug(f"daskdf_to_vertica: converting to vdf")
@@ -77,7 +78,7 @@ def daskdf_to_vertica(
 def _check_if_exists(
     connection_kwargs: Dict, name: str, schema: str = "public"
 ) -> bool:
-    """ Quick check if a Vertica table already exists in a schema
+    """Quick check if a Vertica table already exists in a schema
 
     Parameters
     ----------
@@ -113,8 +114,7 @@ def _check_if_exists(
 
 
 def _drop_table(connection: Connection, name: str, schema: str = "public") -> None:
-    """ Little helper to drop a Vertica table with common parameters
-    """
+    """Little helper to drop a Vertica table with common parameters"""
 
     logging.debug(f"_drop_table: {schema=} | {name=}")
     with connection.cursor() as cur:
@@ -199,3 +199,7 @@ def to_vertica(
             futures.append(f)
 
     return dask.compute(futures)
+
+
+def read_vertica(*args, **kwargs):
+    raise NotImplementedError
