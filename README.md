@@ -39,7 +39,6 @@ conda install -c conda-forge dask-vertica
 `dask-vertica` provides `read_vertica` and `to_vertica` methods
 for parallel IO from vertica with Dask.
 
-<!--
 ```python
 >>> from dask_vertica import read_vertica
 >>> example_query = '''
@@ -56,19 +55,23 @@ for parallel IO from vertica with Dask.
 ... )
 ```
 
+`read_vertica` will return a dask dataframe, so data will not be fetched until `.compute()` or `.persist()` is called.
+This means that you can lazily perform calculations and upload the results at the same time.
+Note that `to_vertica` calls `.compute()` for you, so it doesn't appear in the example below.
+
 ```python
 >>> from dask_vertica import to_vertica
+>>> means = ddf.groupby("name")["y"].mean() # lazy, no calc performed
 >>> to_vertica(
-...     ddf,
+...     means,
 ...     name="my_table",
 ...     connection_kwargs={
 ...         "user": "...",
 ...         "password": "...",
 ...         ...,
 ...     },
-... )
+... ) # computes means and uploads to DB
 ```
--->
 
 See their docstrings for further API information.
 

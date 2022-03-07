@@ -14,8 +14,6 @@ import dask
 import dask.dataframe as dd
 from dask.base import tokenize
 from dask.delayed import delayed
-from dask.highlevelgraph import HighLevelGraph
-from dask.layers import DataFrameIOLayer
 from dask.utils import SerializableLock
 
 
@@ -64,8 +62,7 @@ def daskdf_to_vertica(
             with connection.cursor() as cursor:
                 tmp = f"tmp_{name}_{uuid.uuid4().hex}"
 
-                logging.debug(f"daskdf_to_vertica: {tmp=}")
-                logging.debug(f"daskdf_to_vertica: converting to vdf")
+                logging.debug(f"daskdf_to_vertica: converting to vdf with {tmp=}")
 
                 vdf = pandas_to_vertica(
                     df,
