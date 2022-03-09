@@ -171,9 +171,11 @@ def to_vertica(
     >>> to_vertica(
     ...     df,
     ...     connection_kwargs={
+    ...         "host": "...",
+    ...         "port": 5433,
+    ...         "database": "...",
     ...         "user": "...",
     ...         "password": "...",
-    ...         ...
     ...     },
     ...     name="my_table",
     ...     schema="project_schema",
@@ -198,13 +200,15 @@ def to_vertica(
             with connect(**connection_kwargs) as connection:
                 _drop_table(connection, name, schema=schema)
 
+    first_relation = "insert" if if_exists in ("append", "insert") else "table"
+
     futures = []
     for n, partition in enumerate(df.to_delayed()):
         f = daskdf_to_vertica(
             partition,
             connection_kwargs,
             name,
-            relation_type="table" if n == 0 else "insert",
+            relation_type=first_relation if n == 0 else "insert",
             schema=schema,
         )
 
@@ -267,9 +271,11 @@ def read_vertica(
     >>> read_vertica(
     ...     df,
     ...     connection_kwargs={
+    ...         "host": "...",
+    ...         "port": 5433,
+    ...         "database": "...",
     ...         "user": "...",
     ...         "password": "...",
-    ...         ...
     ...     },
     ...     "my_table",
     ...     52,
