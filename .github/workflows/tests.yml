@@ -18,22 +18,6 @@ jobs:
         python-version: ["3.8", "3.9"]
 
     steps:
-      - name: Check Environment Vars part 1
-        env:
-          TEST_PORT: ${{ secrets.TEST_PORT }}
-          TEST_SERVER: ${{ secrets.TEST_SERVER }}
-          TEST_DB: ${{ secrets.TEST_DB }}
-        run: |
-          echo ${#TEST_PORT}
-          echo ${#TEST_SERVER}
-          echo ${#TEST_DB}
-
-      - name: Check Environment Vars part 2
-        run: |
-          echo ${#TEST_PORT}
-          echo ${#TEST_SERVER}
-          echo ${#TEST_DB}
-
       - name: Checkout source
         uses: actions/checkout@v2
 

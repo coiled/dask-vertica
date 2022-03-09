@@ -60,6 +60,7 @@ def remove_test_tables(connection_kwargs, schema):
     with connect(**connection_kwargs) as connection:
         _drop_table(connection, "testing_small_df", schema=schema)
         _drop_table(connection, "testing_if_exists_df", schema=schema)
+        _drop_table(connection, "testing_if_exists_insert", schema=schema)
     yield
 
 
@@ -115,20 +116,20 @@ def test_write_if_exists_overwrite(
     assert df_out.shape[0] == 5
 
 
-def test_write_if_exists_append(
+def test_write_if_exists_insert(
     small_df, connection_kwargs, client, schema, remove_test_tables
 ):
-    to_vertica(small_df, connection_kwargs, name="testing_if_exists_df", schema=schema)
+    to_vertica(small_df, connection_kwargs, name="testing_if_exists_insert", schema=schema)
 
     to_vertica(
         small_df,
         connection_kwargs,
-        name="testing_if_exists_df",
+        name="testing_if_exists_insert",
         schema=schema,
         if_exists="insert",
     )
 
     df_out = read_vertica(
-        connection_kwargs, "testing_if_exists_df", npartitions=2, schema=schema
+        connection_kwargs, "testing_if_exists_insert", npartitions=2, schema=schema
     ).compute()
     assert df_out.shape[0] == 10
