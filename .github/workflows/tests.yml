@@ -36,4 +36,11 @@ jobs:
         run: python -m pip install -e .
 
       - name: Run tests
+        env:
+          VERTICA_USER: ${{ secrets.VERTICA_USER }}
+          VERTICA_PASSWORD: ${{ secrets.VERTICA_PASSWORD }}
+          VERTICA_PORT: ${{ secrets.VERTICA_PORT }}
+          VERTICA_DB: ${{ secrets.VERTICA_DB }}
+          VERTICA_HOST: ${{ secrets.VERTICA_HOST }}
+          VERTICA_SCHEMA: ${{ secrets.VERTICA_SCHEMA }}
         run: pytest dask_vertica
