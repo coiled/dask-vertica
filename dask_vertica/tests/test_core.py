@@ -105,7 +105,7 @@ def test_write_if_exists_error(
 
 
 def test_write_if_exists_overwrite(
-    small_df, connection_kwargs, client, schema, remove_test_tables
+    small_df, connection_kwargs, client, schema, remove_test_tables, platform
 ):
 
     table_name = f"testing_if_exists_df_{platform}"
@@ -131,7 +131,7 @@ def test_write_if_exists_overwrite(
 
 
 def test_write_if_exists_insert(
-    small_df, connection_kwargs, client, schema, remove_test_tables
+    small_df, connection_kwargs, client, schema, remove_test_tables, platform
 ):
     table_name = f"testing_if_exists_insert_{platform}"
     to_vertica(
