@@ -58,10 +58,22 @@ def demo_ts():
 @pytest.fixture
 def remove_test_tables(connection_kwargs, schema):
     with connect(**connection_kwargs) as connection:
+        print("setup - dropping testing_small_df")
         _drop_table(connection, "testing_small_df", schema=schema)
+        print("setup - dropping testing_if_exists_df")
         _drop_table(connection, "testing_if_exists_df", schema=schema)
+        print("setup - dropping testing_if_exists_insert")
         _drop_table(connection, "testing_if_exists_insert", schema=schema)
+
     yield
+
+    with connect(**connection_kwargs) as connection:
+        print("teardown - dropping testing_small_df")
+        _drop_table(connection, "testing_small_df", schema=schema)
+        print("teardown - dropping testing_if_exists_df")
+        _drop_table(connection, "testing_if_exists_df", schema=schema)
+        print("teardown - dropping testing_if_exists_insert")
+        _drop_table(connection, "testing_if_exists_insert", schema=schema)
 
 
 def test_write_read_roundtrip(
@@ -119,7 +131,9 @@ def test_write_if_exists_overwrite(
 def test_write_if_exists_insert(
     small_df, connection_kwargs, client, schema, remove_test_tables
 ):
-    to_vertica(small_df, connection_kwargs, name="testing_if_exists_insert", schema=schema)
+    to_vertica(
+        small_df, connection_kwargs, name="testing_if_exists_insert", schema=schema
+    )
 
     to_vertica(
         small_df,
