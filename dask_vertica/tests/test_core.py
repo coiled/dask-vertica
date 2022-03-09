@@ -79,11 +79,10 @@ def remove_test_tables(connection_kwargs, schema):
 def test_write_read_roundtrip(
     remove_test_tables, small_df, connection_kwargs, client, schema
 ):
-    to_vertica(small_df, connection_kwargs, name="testing_small_df", schema=schema)
+    table_name = "testing_small_df"
+    to_vertica(small_df, connection_kwargs, name=table_name, schema=schema)
 
-    ddf_out = read_vertica(
-        connection_kwargs, "testing_small_df", npartitions=1, schema=schema
-    )
+    ddf_out = read_vertica(connection_kwargs, table_name, npartitions=1, schema=schema)
 
     result = ddf_out.sort_values(by="id")
     dd.utils.assert_eq(small_df, result, check_index=False, check_divisions=False)
@@ -92,19 +91,20 @@ def test_write_read_roundtrip(
 def test_write_if_exists_error(
     small_df, connection_kwargs, client, schema, remove_test_tables
 ):
-    to_vertica(small_df, connection_kwargs, name="testing_if_exists_df", schema=schema)
+    table_name = "testing_if_exists_df"
+    to_vertica(small_df, connection_kwargs, name=table_name, schema=schema)
 
     with pytest.raises(RuntimeError):
         to_vertica(
             small_df,
             connection_kwargs,
-            name="testing_if_exists_df",
+            name=table_name,
             schema=schema,
             if_exists="error",
         )
 
     df_out = read_vertica(
-        connection_kwargs, "testing_if_exists_df", npartitions=2, schema=schema
+        connection_kwargs, table_name, npartitions=2, schema=schema
     ).compute()
     assert df_out.shape[0] == 5
 
@@ -112,18 +112,25 @@ def test_write_if_exists_error(
 def test_write_if_exists_overwrite(
     small_df, connection_kwargs, client, schema, remove_test_tables
 ):
-    to_vertica(small_df, connection_kwargs, name="testing_if_exists_df", schema=schema)
 
+    table_name = "testing_if_exists_df"
     to_vertica(
         small_df,
         connection_kwargs,
-        name="testing_if_exists_df",
+        name=table_name,
+        schema=schema,
+        if_exists="overwrite",
+    )
+    to_vertica(
+        small_df,
+        connection_kwargs,
+        name=table_name,
         schema=schema,
         if_exists="overwrite",
     )
 
     df_out = read_vertica(
-        connection_kwargs, "testing_if_exists_df", npartitions=2, schema=schema
+        connection_kwargs, table_name, npartitions=2, schema=schema
     ).compute()
     assert df_out.shape[0] == 5
 
@@ -131,19 +138,24 @@ def test_write_if_exists_overwrite(
 def test_write_if_exists_insert(
     small_df, connection_kwargs, client, schema, remove_test_tables
 ):
+    table_name = "testing_if_exists_insert"
     to_vertica(
-        small_df, connection_kwargs, name="testing_if_exists_insert", schema=schema
+        small_df,
+        connection_kwargs,
+        name=table_name,
+        schema=schema,
+        if_exists="overwrite",
     )
 
     to_vertica(
         small_df,
         connection_kwargs,
-        name="testing_if_exists_insert",
+        name=table_name,
         schema=schema,
         if_exists="insert",
     )
 
     df_out = read_vertica(
-        connection_kwargs, "testing_if_exists_insert", npartitions=2, schema=schema
+        connection_kwargs, table_name, npartitions=2, schema=schema
     ).compute()
     assert df_out.shape[0] == 10
