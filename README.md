@@ -1,9 +1,8 @@
 # Dask-vertica
 
-<!--
 [![Tests](https://github.com/coiled/dask-vertica/actions/workflows/tests.yml/badge.svg)](https://github.com/coiled/dask-vertica/actions/workflows/tests.yml)
 [![Linting](https://github.com/coiled/dask-vertica/actions/workflows/pre-commit.yml/badge.svg)](https://github.com/coiled/dask-vertica/actions/workflows/pre-commit.yml)
--->
+
 
 This connector is in an early experimental/testing phase.
 
