@@ -1,4 +1,5 @@
 import os
+import sys
 
 import pandas as pd
 import pytest
@@ -20,6 +21,11 @@ def client():
 @pytest.fixture
 def schema():
     return os.environ["VERTICA_SCHEMA"]
+
+
+@pytest.fixture
+def platform():
+    return f"{sys.platform}{sys.version_info.major}{sys.version_info.minor}"
 
 
 @pytest.fixture(scope="module")
@@ -56,30 +62,19 @@ def demo_ts():
 
 
 @pytest.fixture
-def remove_test_tables(connection_kwargs, schema):
+def remove_test_tables(connection_kwargs, schema, platform):
     with connect(**connection_kwargs) as connection:
-        print("setup - dropping testing_small_df")
-        _drop_table(connection, "testing_small_df", schema=schema)
-        print("setup - dropping testing_if_exists_df")
-        _drop_table(connection, "testing_if_exists_df", schema=schema)
-        print("setup - dropping testing_if_exists_insert")
-        _drop_table(connection, "testing_if_exists_insert", schema=schema)
+        _drop_table(connection, f"testing_small_df_{platform}", schema=schema)
+        _drop_table(connection, f"testing_if_exists_df_{platform}", schema=schema)
+        _drop_table(connection, f"testing_if_exists_insert_{platform}", schema=schema)
 
     yield
 
-    with connect(**connection_kwargs) as connection:
-        print("teardown - dropping testing_small_df")
-        _drop_table(connection, "testing_small_df", schema=schema)
-        print("teardown - dropping testing_if_exists_df")
-        _drop_table(connection, "testing_if_exists_df", schema=schema)
-        print("teardown - dropping testing_if_exists_insert")
-        _drop_table(connection, "testing_if_exists_insert", schema=schema)
-
 
 def test_write_read_roundtrip(
-    remove_test_tables, small_df, connection_kwargs, client, schema
+    remove_test_tables, small_df, connection_kwargs, client, schema, platform
 ):
-    table_name = "testing_small_df"
+    table_name = f"testing_small_df_{platform}"
     to_vertica(small_df, connection_kwargs, name=table_name, schema=schema)
 
     ddf_out = read_vertica(connection_kwargs, table_name, npartitions=1, schema=schema)
@@ -89,9 +84,9 @@ def test_write_read_roundtrip(
 
 
 def test_write_if_exists_error(
-    small_df, connection_kwargs, client, schema, remove_test_tables
+    small_df, connection_kwargs, client, schema, remove_test_tables, platform
 ):
-    table_name = "testing_if_exists_df"
+    table_name = f"testing_if_exists_df_{platform}"
     to_vertica(small_df, connection_kwargs, name=table_name, schema=schema)
 
     with pytest.raises(RuntimeError):
@@ -113,7 +108,7 @@ def test_write_if_exists_overwrite(
     small_df, connection_kwargs, client, schema, remove_test_tables
 ):
 
-    table_name = "testing_if_exists_df"
+    table_name = f"testing_if_exists_df_{platform}"
     to_vertica(
         small_df,
         connection_kwargs,
@@ -138,7 +133,7 @@ def test_write_if_exists_overwrite(
 def test_write_if_exists_insert(
     small_df, connection_kwargs, client, schema, remove_test_tables
 ):
-    table_name = "testing_if_exists_insert"
+    table_name = f"testing_if_exists_insert_{platform}"
     to_vertica(
         small_df,
         connection_kwargs,
